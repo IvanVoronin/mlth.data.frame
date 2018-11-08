@@ -22,8 +22,8 @@ e-mail: ivan.a.voronin@gmail.com
 
 # To install:
 
-\# install.packages('devtools')
+`\# install.packages('devtools')
 
 library(devtools)
 
-install_github('ivanvoronin/mlth.data.frame')
+install_github('ivanvoronin/mlth.data.frame')`
