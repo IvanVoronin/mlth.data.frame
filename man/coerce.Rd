@@ -3,8 +3,9 @@
 \name{is.mlth.data.frame}
 \alias{is.mlth.data.frame}
 \alias{as.mlth.data.frame}
-\alias{as.mlth.data.frame.default}
 \alias{as.mlth.data.frame.list}
+\alias{as.mlth.data.frame.default}
+\alias{as.mlth.data.frame.data.frame}
 \alias{as.mlth.data.frame.matrix}
 \alias{as.list.mlth.data.frame}
 \title{Coerce to a Multi-Header Data Frame}
@@ -13,9 +14,11 @@ is.mlth.data.frame(x)
 
 as.mlth.data.frame(x, row.names = NULL, ...)
 
+\method{as.mlth.data.frame}{list}(x, ...)
+
 \method{as.mlth.data.frame}{default}(x, ...)
 
-\method{as.mlth.data.frame}{list}(x, ...)
+\method{as.mlth.data.frame}{data.frame}(x, ...)
 
 \method{as.mlth.data.frame}{matrix}(x, ...)
 

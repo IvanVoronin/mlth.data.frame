@@ -1,7 +1,7 @@
 Package: mlth.data.frame
 Title: Multi-headed Data Frame
-Version: 1.1
-Date: 2018-11-08
+Version: 1.2
+Date: 2020-03-17
 Author: Ivan Voronin
 Maintainer: Ivan Voronin <ivan.a.voronin@gmail.com>
 Description: This is a package to define, manipulate and write the 'multi-header' dataframes, 
@@ -9,6 +9,6 @@ Description: This is a package to define, manipulate and write the 'multi-header
 		into Excel spreadsheets and to adjust its appearance (e.g., fonts, borders etc). 
 		The 'xlsx' package is used for this.
 Suggests:
-    xlsx
+    openxlsx
 License: ???
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1
