@@ -1,5 +1,7 @@
 #' @title Write Multi-Header Data Frame to a File
 #' @description
+#' !!! Thus function has been replaced by `write.xlsx.output` and `xlsx.writer.openxlsx` !!!
+#' Don't use it.
 #' Write a \code{mlth.data.frame} object to a file (Excel, csv etc). The function
 #' has many options to define and apply Excel styles, write several tables 
 #' into the same file or same spreadsheet etc. The methods to write into other than Excel
@@ -88,16 +90,16 @@
 #' ## Write with customized styles
 #' write.mlth(output, file = 'example1.xlsx', sheetName = 'Pretty table 2',
 #' 			      append = TRUE, digits = 2, apa = TRUE,
-#' 			      customStyles = list(list(mask = !mask(output, c = 1, h = T, rn = T),
+#' 			      customStyles = list(list(mask = !mask(output, c = 1, h = TRUE, rn = TRUE),
 #' 										                 alignment = list(horizontal = 'ALIGN_CENTER')),
-#' 							                  list(mask = mask(output, c = 1, h = T, rn = T),
+#' 							                  list(mask = mask(output, c = 1, h = TRUE, rn = TRUE),
 #' 										                 font = list(isBold = TRUE))))
 #' write.mlth(output, file = 'example1.xlsx', sheetName = 'Pretty table 2',
 #' 			      append = TRUE, digits = 2, apa = TRUE, 
 #' 			      coord = c(13, 1), header = FALSE,
-#' 			      customStyles = list(list(mask = !mask(output, c = 1, h = F, rn = T),
+#' 			      customStyles = list(list(mask = !mask(output, c = 1, h = FALSE, rn = TRUE),
 #' 										                 alignment = list(horizontal = 'ALIGN_CENTER')),
-#' 							                  list(mask = mask(output, c = 1, h = T, rn = T),
+#' 							                  list(mask = mask(output, c = 1, h = TRUE, rn = TRUE),
 #' 										                 font = list(isBold = TRUE))))
 #' 
 #' @export

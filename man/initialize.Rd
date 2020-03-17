@@ -3,15 +3,15 @@
 \name{mlth.data.frame}
 \alias{mlth.data.frame}
 \alias{mlth}
-\alias{mlth}
 \title{Multi-Header Data Frames}
 \usage{
 mlth.data.frame(..., row.names = NULL, check.rows = FALSE,
-  check.names = FALSE, fix.empty.names = TRUE,
+  check.names = FALSE, fix.empty.names = FALSE,
   stringsAsFactors = default.stringsAsFactors())
 
 mlth(..., row.names = NULL, check.rows = FALSE, check.names = FALSE,
-  fix.empty.names = TRUE, stringsAsFactors = default.stringsAsFactors())
+  fix.empty.names = FALSE,
+  stringsAsFactors = default.stringsAsFactors())
 }
 \arguments{
 \item{...}{the collection of named variables or sub-tables, each of class \code{list}. 

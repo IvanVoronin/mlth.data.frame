@@ -79,3 +79,7 @@ rbind.mlth.data.frame <- function(...) {
   
   return(outp)
 }
+
+# TODO: Check/implement cbind(A = ...), rbind(A = ...)
+# TODO: Check row.names, especially when do.call('mlth.data.frame')
+# TODO: Check/implement apply

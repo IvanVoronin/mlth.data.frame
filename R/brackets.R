@@ -44,91 +44,102 @@
 #' L[1:2, list(Y = c('N', 'M', 'N'), 'X')]
 #' 
 #' @export
-# `[[.mlth.data.frame` <- function(x, i){
-#   if (is.list(i)){
-#     selectByList(x, i)
-#   } else {
-#     outp <- as.list(x)[[i]]
-#     if (!isAtomic(outp)){
-#       outp <- as.mlth.data.frame(outp, row.names = row.names(x))
-#     }
-#     return(outp)
-#   }
-# }
+`[[.mlth.data.frame` <- function(x, i) {
+  outp <- unclass(x)
+  
+  if (is.list(i)) {
+    outp <- selectByList(outp, i)
+  } else {
+    outp <- outp[[i]]
+  }
+  
+  if (isAtomic(outp)) {
+    return(setNames(outp, row.names(outp)))
+  } else {
+    return(do.call('mlth.data.frame',
+                   c(outp, list(row.names = row.names(x)))))
+  }
+}
 
 #' @rdname brackets
 #' @export
-#`$.mlth.data.frame` <- function(object, name){
-#  object[[name]]
-#}
+`$.mlth.data.frame` <- function(object, name) {
+  object[[name]]
+}
 
+#' @export
 selRow <- function(x, i){
   # i must be numeric
   if (isAtomic(x))
     return(x[i])
   else{
-    outp <- lapply(x, selRow, i)
-    structure(outp,
-              names = names(x),
-              class = c('mlth.data.frame', 'list'),
-              row.names = row.names(x)[i])
+    return(lapply(x, selRow, i))
+#    outp <- lapply(x, selRow, i)
+    # structure(outp,
+    #           names = names(x),
+    #           class = c('mlth.data.frame', 'list'),
+    #           row.names = row.names(x)[i])
   }
 }
 
-#' @rdname brackets
 #' @export
-`[.mlth.data.frame` <- function(x, i, j){
+`[.mlth.data.frame` <- function(x, i, j) {
   na <- nargs()
-  mi <- missing(i)
-  mj <- missing(j)
   
-  if (na == 1)		# A[]	-> A
+  # A[]
+  if (na == 1) {
     return(x)
-  if (na == 2) {		# A[i]	-> as.list(A)[i]
+  }
+  
+  rn <- row.names(x)
+  outp <- unclass(x)
+
+  if (na == 2) { # A[i]
     if (is.list(i))
-      return(selectByList(x, i))
+      outp <- selectByList(outp, i)
     else {
       if (is.character(i))
-        i <- match(i, row.names(x))
-      return(structure(as.list(x)[i],
-                       names = names(x)[i],
-                       class = c('mlth.data.frame', 'list'),
-                       row.names = row.names(x)))
-      #outp <- as.list(x)[i]
-      #attributes(outp) <- attributes(x)
-      #names(outp) <- names(x)[i]
-      #return(outp)	
+        i <- match(i, names(outp))
+      outp <- outp[i]
     }
+  } else { # A[i, j]
+    if (missing(i)) {
+      i <- 1:nrow(x)
+    }
+    if (is.character(i))
+      i <- match(i, rn)
+    outp <- selRow(outp, i)
+    rn <- rn[i]
+    
+    if (missing(j)) {
+      j <- 1:length(outp)
+    }
+    if (is.character(j)) {
+      j <- match(j, names(x))
+    }
+    if (is.list(j))
+      outp <- selectByList(outp, j)
+    else
+      outp <- outp[j]
   }
   
-  # na == 3
-  if (mi) { 
-    if (mj) return(x) # A[, ]	-> A
-    else return(x[j]) # A[, j]	-> A[j]
-  } else { 
-    if (mj) { # A[i, ]
-      if (is.character(i))
-        i <- match(i, row.names(x))
-      outp <- selRow(x, i)
-#      outp <- do.call('mlth', outp)
-#      row.names(outp) <- if(length(row.names(x)) > 0 || chInd) row.names(x)[i] 
-#      else NULL
-      return(outp)
-    } else return(x[j][i, ]) # A[i, j] -> A[j][, i]
-  }
+  do.call('mlth.data.frame',
+          c(outp, list(row.names = rn)))
 }
 
 #' @rdname brackets
 #' @export
 namesList <- function(x) {
+  x <- unclass(x)
   outp <- NULL
   for (i in 1:length(x))
-    if (is.list(x[[i]])) {
+    if (isAtomic(x[[i]])) {
+      outp <- c(outp, names(x[i])) #! class x[i]
+    } else {
       subNames <- list(namesList(x[[i]]))
       names(subNames) <- names(x[i])
       outp <- c(outp, subNames)
-    } else
-      outp <- c(outp, names(x[i])) #! class x[i]
+    }
     return(outp)
 }
 
@@ -173,7 +184,7 @@ selectByList <- function(x, N){
   }
   
   mostattributes(xl) <- attributes(x)
-#  xl <- do.call('mlth', c(xl, list(row.names = row.names(x))))
-  
+
   return(xl)
 }
+
