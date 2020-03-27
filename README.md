@@ -16,6 +16,8 @@ It also provides functionality to write the dataframe into Excel spreadsheets an
 
 The development is still ongoing, the feedback is welcome.
 
+[Package vignette](https://ivanvoronin.github.io/mlth.data.frame/)
+
 Author: Ivan Voronin, Psychological Institute of Russian Academy of Education, Moscow
 
 e-mail: ivan.a.voronin@gmail.com
