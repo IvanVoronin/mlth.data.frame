@@ -1,6 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^doc$
+^docs$
 ^Meta$
 ^dump$
 ^output$
