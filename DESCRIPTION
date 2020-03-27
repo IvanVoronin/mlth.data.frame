@@ -8,6 +8,9 @@ Description: This is a package to define, manipulate and write the 'multi-header
 		or nested dataframes. It also provides functionality to write mlth.data.frames 
 		into Excel spreadsheets.
 Suggests:
-    openxlsx
+    openxlsx,
+    knitr,
+    rmarkdown
 License: ???
 RoxygenNote: 6.1.1
+VignetteBuilder: knitr
