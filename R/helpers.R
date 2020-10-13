@@ -11,9 +11,11 @@ behead <- function(tbl) UseMethod('behead', tbl)
 
 #' @export
 behead.default <- function(tbl) {
-  tbl <- as.data.frame(tbl)
-  attr(tbl, 'header') <- list()
-  tbl
+  tbl_out <- as.data.frame(tbl)
+  attr(tbl_out, 'header') <- list()
+  attr(tbl_out, 'caption') <- attr(tbl, 'caption')
+  attr(tbl_out, 'note') <- attr(tbl, 'note')
+  tbl_out
 }
 
 #' @export
