@@ -79,6 +79,9 @@ behead.mlth.data.frame <- function(tbl) {
     tree
   }
   
+  cap <- attr(tbl, 'caption')
+  note <- attr(tbl, 'note')
+  
   header <- list()
   ht <- rapply(tbl, function(x) return(1), how = 'list')
   
@@ -109,6 +112,8 @@ behead.mlth.data.frame <- function(tbl) {
   # }
   
   attr(tbl, 'header') <- header
+  attr(tbl, 'caption') <- cap
+  attr(tbl, 'note') <- note
   
   tbl
 }
