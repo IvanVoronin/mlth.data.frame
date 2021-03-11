@@ -47,6 +47,7 @@ behead.mlth.data.frame <- function(tbl) {
   }
   
   trim_tree <- function(tree) {
+    # FIXME: Doesn't work for > 3 rows in the header
     is_leave <- !sapply(tree, is.list)
     
     # Process branches
@@ -194,6 +195,10 @@ xlsx.writer.openxlsx <- function(tblList, file, overwrite) {
   if (length(names(tblList)) == 0) 
     names(tblList) <- paste('Sheet', 1:length(tblList))
   
+  empty_names <- which(names(tblList) == '')
+  if (length(empty_names) > 0)
+    names(tblList)[empty_names] <- paste0('Sheet', 1:length(empty_names))
+  
   for (sheet in names(tblList)) {
     curTbl <- tblList[[sheet]]
     addWorksheet(wb, sheet)
@@ -207,7 +212,7 @@ xlsx.writer.openxlsx <- function(tblList, file, overwrite) {
                  rows = startRow)
       
       writeData(wb, sheet, 
-                attr(curTbl, 'caption'),
+                as.character(attr(curTbl, 'caption')),
                 startCol = 1, startRow = startRow)
       startRow <- startRow + 1
     }
@@ -261,7 +266,7 @@ xlsx.writer.openxlsx <- function(tblList, file, overwrite) {
                  rows = startRow)
       
       writeData(wb, sheet, 
-                attr(curTbl, 'note'),
+                as.character(attr(curTbl, 'note')),
                 startCol = 1, startRow = startRow)
     }
   }
