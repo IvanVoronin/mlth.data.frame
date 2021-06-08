@@ -3,6 +3,11 @@ kable2 <- function(x, ...) UseMethod('kable2')
 
 #' @export
 kable2.default <- function(...) {
+  # Additional arguments:
+  # align_first
+  # footnote
+  # register_output
+  # name
   dots <- list(...)
   if (length(dots$x) > 0)
     x <- dots$x
@@ -23,7 +28,39 @@ kable2.default <- function(...) {
     dots$align <- align
   }
   
-  do.call(knitr::kable, dots)
+  if (length(dots$footnote) > 0) {
+    dots_note <- dots$footnote
+    note <- dots_note[[1]]
+    dots$footnote <- NULL
+  } else {
+    note <- NULL
+  }
+  
+  if (length(dots$register_output > 0) && dots$register_output) {
+    register_output(
+      x, 
+      name = dots$name,
+      caption = dots$caption,
+      note = note
+    )
+  }
+
+  dots$name <- NULL
+  dots$register_output <- NULL
+  
+  outp <- do.call(knitr::kable, dots)
+
+  if (length(note) > 0) {
+    outp <- do.call(
+      'footnote',
+      c(
+        list(outp),
+        dots_note
+      )
+    )
+  }
+  
+  outp
 }
 
 #' @export
@@ -309,6 +346,36 @@ register_output <- function(tbl, name = NULL, caption = NULL, note = NULL) {
   return(tbl)
 }
 
+register_output_internal <- function(...) {
+  # This function accepts same arguments as kable/kable2,
+  # registers output and peels the dots from unnecessary args
+  dots <- list(...)
+
+  if (length(dots$register_output > 0) && dots$register_output) {
+    if (length(dots$x) > 0)
+      x <- dots$x
+    else x <- dots[[1]]
+    
+    if (length(dots$footnote) > 0) {
+      dots_note <- dots$footnote
+      note <- dots_note[[1]]
+    } else {
+      note <- NULL
+    }
+    
+    register_output(
+      x, 
+      name = dots$name,
+      caption = dots$caption,
+      note = note
+    )
+  }
+  
+  dots$register_output <- NULL
+  
+  dots
+}
+  
 #' @title Write tables to xlsx file
 #' @description These are the writers to use for writing the tables to an xlsx file.
 #' Different writers can rely on different packages, like `openxlsx` or `xlsx`.
