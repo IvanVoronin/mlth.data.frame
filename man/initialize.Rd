@@ -5,13 +5,23 @@
 \alias{mlth}
 \title{Multi-Header Data Frames}
 \usage{
-mlth.data.frame(..., row.names = NULL, check.rows = FALSE,
-  check.names = FALSE, fix.empty.names = FALSE,
-  stringsAsFactors = default.stringsAsFactors())
-
-mlth(..., row.names = NULL, check.rows = FALSE, check.names = FALSE,
+mlth.data.frame(
+  ...,
+  row.names = NULL,
+  check.rows = FALSE,
+  check.names = FALSE,
   fix.empty.names = FALSE,
-  stringsAsFactors = default.stringsAsFactors())
+  stringsAsFactors = default.stringsAsFactors()
+)
+
+mlth(
+  ...,
+  row.names = NULL,
+  check.rows = FALSE,
+  check.names = FALSE,
+  fix.empty.names = FALSE,
+  stringsAsFactors = default.stringsAsFactors()
+)
 }
 \arguments{
 \item{...}{the collection of named variables or sub-tables, each of class \code{list}. 

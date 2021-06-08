@@ -20,11 +20,12 @@ knitr::opts_chunk$set(collapse = TRUE)
 
 Hi!
 
-This vignette illustrates the functionality of `mlth.data.frame` package. This name stands for __multiheaded data.frame__, a data.frame with grouped columns.
+This vignette illustrates the functionality of `mlth.data.frame` package. This name stands for __multiheaded data.frame__, a data.frame with grouped columns. It also allows grouped rows when
+printing using `kable` or writing in an Excel spreadsheet.
 
 This package is a companion of [`TwinAnalysis` package](https://github.com/IvanVoronin/TwinAnalysis). As such, it provides functionality for organizing and collecting the tables across the analysis script and sending them into an Excel file or on a html/markdown/LaTeX report. 
 
-To install the package:
+# Installation
 
 ```{r, eval = FALSE}
 # install.packages('devtools')
@@ -38,13 +39,18 @@ library(mlth.data.frame)
 library('mlth.data.frame')
 ```
 
-A mlth.data.frame looks like this:
+# Basics
 
 ```{r}
-A <- mlth.data.frame(Letters = list(cons = c('a', 'e', 'i'),
-                                    vow = c('b', 'c', 'd')),
-                     Numbers = list(even = c(2, 4, 6),
-                                    odd = c(1, 3, 5)))
+A <- mlth.data.frame(
+  Letters = list(
+    cons = c('a', 'e', 'i'),
+    vow = c('b', 'c', 'd')),
+  Numbers = list(
+    even = c(2, 4, 6),
+    odd = c(1, 3, 5)
+  )
+)
 
 A
 ```
@@ -59,7 +65,7 @@ nrow(A)
 dim(A)
 ```
 
-The columns of mlth.data.frame can be arranged into groups, in this case Letters and Numbers. You can select groups and variables by refering to them by name or index number:
+The columns of mlth.data.frame can be arranged into groups, in this case Letters and Numbers. You can select groups and variables by referring to them by name or index number:
 
 ```{r}
 A$Letters
@@ -91,16 +97,19 @@ lapply(A, names)
 rapply(A, class)
 ```
 
+# `mlth.data.frame` for output
 
-I will use the in-built dataset `mtcars` to demonstrate the functionality of mlth.data.frame for the output. I want to compare the cars with 4, 6 and 8 cylinders (`cyl`) by mileage (`mpg`), horsepower (`hp`) and weight. This is one of many possible ways to do so and get the result in mlth.data.frame.
+I use the in-built data `mtcars` to show the functionality of mlth.data.frame for the output. I compare the cars with 4, 6 and 8 cylinders (`cyl`) by mileage (`mpg`), horsepower (`hp`) and weight. This is one of many possible ways to do so and get the result in mlth.data.frame.
 
 ```{r}
 data(mtcars)
 library(dplyr)
 
-mtcars$cyl <- factor(mtcars$cyl,
-                     levels = c(4, 6, 8),
-                     labels = paste(c(4, 6, 8), 'cylinders'))
+mtcars$cyl <- factor(
+  mtcars$cyl,
+  levels = c(4, 6, 8),
+  labels = paste(c(4, 6, 8), 'cylinders')
+)
 
 var_names <- c('mpg', 'hp', 'wt')
 
@@ -125,14 +134,18 @@ Tab <- mtcars[, var_names] %>%
   lapply(function(x) {
     LM <- summary(lm(x ~ mtcars$cyl))
     ftest <- LM$fstatistic
-    data.frame(F = ftest['value'],
-               df1 = ftest['numdf'],
-               df2 = ftest['dendf'],
-               p = pf(ftest['value'], 
-                      ftest['numdf'], 
-                      ftest['dendf'], 
-                      lower.tail = FALSE),
-               R2 = LM$r.squared)
+    data.frame(
+      F = ftest['value'],
+      df1 = ftest['numdf'],
+      df2 = ftest['dendf'],
+      p = pf(
+        ftest['value'], 
+        ftest['numdf'], 
+        ftest['dendf'], 
+        lower.tail = FALSE
+      ),
+      R2 = LM$r.squared
+    )
   }) %>% do.call('rbind', .) %>%
   as.mlth.data.frame %>%
   cbind(Tab, .)
@@ -140,31 +153,161 @@ Tab <- mtcars[, var_names] %>%
 Tab
 ```
 
+# Writing html tables using `knitr::kable` and `kableExtra`
+
+```{r}
+# library(knitr)
+library(kableExtra)
+
+Tab %>%
+  behead %>%
+  kable(
+    align = 'c',
+    digits = c(
+      rep(c(0, 2, 2), 3),
+      3, 0, 0, 3, 3
+    )
+  ) %>%
+  kable_styling %>%
+  add_complex_header_above(Tab)
+```
+
+
+```{r include=FALSE}
+Tab[1:3] %>%
+  lapply(as.data.frame) %>%
+  lapply(`row.names<-`, c('mpg', 'hp', 'wt')) %>%
+  kable2(
+    align = 'c',
+    align_first = 'l',
+    digits = c(0, 2, 2)
+  ) %>%
+  kable_styling
+
+list(
+  'Table 1' = Tab,
+  'Table 2' = Tab
+) %>%
+  kable2 %>%
+  kable_styling()
+```
+
+
+# Writing the tables to an Excel spreadsheet
+
 To send this table to an Excel output, we have to register it. Then, at the end of the script, we will use `write.xlsx.output()` to write all the tables to a single Excel file. The table will be appended to the global `OUTPUT` list. We can point out the name of Excel spreadsheet in the file (`name`), table caption (`caption`) and table footnote (`note`). Details in `?register_output`. The table doesn't have to be mlth.data.frame, the regular data.frame can also be recorded for the output. 
 
 ```{r}
-register_output(Tab, name = 'by cylinders',
-                caption = 'Characteristics of the cars with different engines')
+register_output(
+  Tab, #name = 'by cylinders',
+  caption = 'Characteristics of the cars with different engines'
+)
 ```
 
 
 ```{r}
 # This is an example of adding a data.frame to the output
 data.frame(A = 1:3, B = 4:6) %>%
-  register_output(name = 'lonely data.frame')
+  register_output(
+    #name = 'lonely data.frame'
+  )
 # It works
 ```
 
 To forward the table to Rmarkdown document, use `knitr` and `kableExtra` ( [more about kableExtra](https://cran.r-project.org/web/packages/kableExtra/vignettes/awesome_table_in_html.html)). The latter package provides additional functionality for table formating, including layered headers. Here is an example of formating the table as html.
 
-```{r}
-library(knitr)
+```{r include=FALSE}
+# library(knitr)
 library(kableExtra)
+
+A <- mlth.data.frame(
+  A = list(
+    AA = 1:3,
+    AB = list(
+      ABA = 1:3,
+      ABB = 1:3
+    )
+  ),
+  B = list(
+    BA = list(
+      BAA = 1:3,
+      BAB = 1:3
+    ),
+    BB = list(
+      BBA = 1:3,
+      BBB = 1:3
+    )
+  )
+)
+
+A %>% behead
+
+A %>% kable2 %>% kable_styling
 
 Tab %>% behead %>%
   kable(digits = c(0, 2, 2, 0, 2, 2, 0, 2, 2, 3, 0, 0, 3, 3))  %>% 
   add_complex_header_above(Tab) %>%
   kable_styling
+```
+
+
+```{r}
+data.frame(
+  A = 1:3,
+  B = 4:6
+) %>%
+  kable2 %>%
+  kable_styling
+
+row.names(Tab) <- 1:3
+
+Tab[['4 cylinders']] <- 1:3
+
+Tab %>%
+  kable2(
+    row.names = TRUE
+  ) %>%
+  kable_styling
+
+
+A <- mlth.data.frame(
+  n = 1:3,
+  m = 3:5,
+  L = list(
+    k = 4:6,
+    r = 2:4
+  )
+)
+
+A %>%
+  kable2(
+    align_first = c('l', 'l'),
+    align = 'c'
+  ) %>%
+  kable_styling
+```
+
+
+```{r}
+data.frame(
+  A = 1:3,
+  B = letters[1:3]
+) %>%
+  register_output(
+    caption = 'Another data.frame'
+  )
+
+mlth.data.frame(
+  A = 1:3,
+  L = list(
+    B = letters[1:3],
+    C = LETTERS[1:3]
+  )
+)%>%
+  register_output(
+    caption = 'More data.frames'
+  )
+
 ```
 
 At the end we write all the output into a file. Currently, `openxlsx` package is used to write the tables into xlsx file. But you can define your own writer function based on any other package of your choice and pass it to `write.xlsx.output()`. Details in `?write.xlsx.output` and `?xlsx.writer.openxlsx`.

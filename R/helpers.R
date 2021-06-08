@@ -1,3 +1,84 @@
+#' @export
+kable2 <- function(x, ...) UseMethod('kable2')
+
+#' @export
+kable2.default <- function(...) {
+  dots <- list(...)
+  if (length(dots$x) > 0)
+    x <- dots$x
+  else x <- dots[[1]]
+  
+  if (length(dots$align_first) > 0) {
+    if (length(dots$align) == 0) {
+      isn <- apply(x, 2, is.numeric)
+      align <- ifelse(isn, 'r', 'l')
+    } else if (length(dots$align) == 1) {
+      align <- rep(dots$align, ncol(x))
+    }
+    
+    align[1:length(dots$align_first)] <- dots$align_first
+    
+    dots <- list(...)
+    dots$align_first <- NULL
+    dots$align <- align
+  }
+  
+  do.call(knitr::kable, dots)
+}
+
+#' @export
+kable2.list <- function(l, ...) {
+  # l is a list of data.frames or matrices
+  dots <- list(...)
+#  l <- lapply(l, as.data.frame)
+  rn <- character(0)
+  
+  if (length(dots$row.names) == 0 || is.na(dots$row.names)) {
+    if (
+      !all(
+        sapply(
+          l, 
+          function(x) 
+            identical(
+              row.names(x), 
+              as.character(1:nrow(x))
+            )
+        )
+      )
+    ) {
+      rn <- Reduce('c', lapply(l, row.names))
+    }
+  } else if (dots$row.names) {
+    rn <- Reduce('c', lapply(l, row.names))
+  }
+  
+  tab <- do.call('rbind', l)
+  if (length(rn) > 0)
+    if (is.mlth.data.frame(tab)) {
+      tab <- cbind(mlth.data.frame(' ' = rn), tab)
+    } else
+      tab <- cbind(' ' = rn, tab)
+  
+  dots$row.names <- FALSE
+  
+  kableExtra::pack_rows(
+    do.call('kable2', c(list(tab), dots)),
+    index = setNames(
+      sapply(l, nrow),
+      names(l)
+    )
+  )
+}
+
+#' @export
+kable2.mlth.data.frame <- function(x, ...) {
+  outp <- kable2(behead(x), ...)
+  add_complex_header_above(
+    outp, x, 
+    row.names = list(...)$row.names
+  )
+}
+
 #' @title Separate table header and table body
 #' @description
 #' Separate table header and table body to write it to a spreadsheet or to html or to whatever.
@@ -34,54 +115,50 @@ behead.mlth.data.frame <- function(tbl) {
   #     lapply(x, make_header_tree)
   #   }
   
-  collect_leaves <- function(tree, leaves = numeric(0)) {
+  collect_leaves <- function(tree) {
+    pile <- numeric(0)
     for (i in 1:length(tree)) {
       if (is.numeric(tree[[i]])) {
-        leaves <- c(leaves, tree[i])
+        leaf <- tree[[i]]
+        names(leaf) <- names(tree)[i]
+        pile <- c(pile, leaf)
       } else {
-        chop <- lapply(tree[[i]], collect_leaves)
-        leaves <- c(leaves, chop)
+        pile <- c(pile, collect_leaves(tree[[i]]))
       }
     }
-    unlist(leaves)
+    
+    pile
   }
-  
+
   trim_tree <- function(tree) {
-    # FIXME: Doesn't work for > 3 rows in the header
-    is_leave <- !sapply(tree, is.list)
+    chop = 0
+    trimmed = list()
+    nm <- names(tree)
     
-    # Process branches
-    for (i in which(!is_leave))
-      tree[i] <- trim_tree(tree[[i]])
+    if (!any(sapply(tree, is.list)))
+      return(sum(unlist(tree)))
     
-    if (!any(is_leave))
-      return(tree)
-    
-    # Process leaves
-    is_leave1 <- c(FALSE, is_leave)
-    is_leave2 <- c(is_leave, FALSE)
-    
-    start <- is_leave2 & !is_leave1
-    start <- start[-length(start)]
-    end <- is_leave1 & !is_leave2
-    end <- end[-1]
-    
-    start_i <- which(start)
-    end_i <- which(end)
-    
-    if (length(start_i) > 0) {
-      for (i in 1:length(start_i)) {
-        si <- start_i[i]
-        ei <- end_i[i]
-        tree[si] <- sum(unlist(tree[si:ei]))
+    for (i in 1:length(tree)) {
+      if (is.list(tree[[i]])) {
+        if (chop > 0) {
+          trimmed <- c(trimmed, list(' ' = chop))
+          chop <- 0
+        }
+        l <- list(trim_tree(tree[[i]]))
+        names(l) <- nm[i]
+        trimmed <- c(trimmed, l)
+      } else {
+        chop <- chop + tree[[i]]
       }
     }
-    names(tree)[si] <- ' '
-    tree <- tree[which(!is_leave | start)]
+    if (chop > 0) {
+      trimmed <- c(trimmed, list(' ' = chop))
+      chop <- 0
+    }
     
-    tree
+    trimmed
   }
-  
+    
   cap <- attr(tbl, 'caption')
   note <- attr(tbl, 'note')
   
@@ -96,25 +173,20 @@ behead.mlth.data.frame <- function(tbl) {
   tbl <- setNames(as.data.frame(tbl), names(header[[1]]))
   header <- header[-1]
   
-  
-  #   header_tree <- ht
-  #   
-  #   while(is.list(header_tree)) {
-  #     ch <- sapply(header_tree, 
-  #                  function(x) 
-  #                    if (is.list(x)) sum(sapply(x, sys.function())) else x )
-  #     ns <- names(ch)
-  #     ns[which(ns == '')] <- ' '
-  #     ch <- setNames(ch, ns)
-  #     header <- c(list(ch), header)
-  #     header_tree <- Reduce(c, header_tree)
-  #   }
-  #   
-  #   tbl <- setNames(as.data.frame(tbl), names(header[[1]]))
-  #   header <- header[-1]
-  # }
-  
   attr(tbl, 'header') <- header
+  attr(tbl, 'caption') <- cap
+  attr(tbl, 'note') <- note
+  
+  tbl
+}
+
+#' @export
+behead.list <- function(tbl) {
+  cap <- attr(tbl, 'caption')
+  note <- attr(tbl, 'note')
+  
+  tbl <- lapply(tbl, behead)
+  
   attr(tbl, 'caption') <- cap
   attr(tbl, 'note') <- note
   
@@ -129,14 +201,30 @@ behead.mlth.data.frame <- function(tbl) {
 #' @param tbl is the initial table.
 #' @param row.names shoul we include `row.names`?
 #' @export
-add_complex_header_above <- function(kable_input, tbl, row.names = NA) {
+add_complex_header_above <- function(
+  kable_input, 
+  tbl, 
+  row.names = NA
+) {
+  # adapted from from knitr code
+  # https://github.com/yihui/knitr/blob/1b40794a1a93162d87252e9aa9a65876933d729b/R/table.R
+  has_rownames = function(x) {
+    !is.null(row.names(x)) && 
+      !identical(
+        row.names(x), 
+        as.character(seq_len(NROW(x)))
+      )
+  }
+    
   outp <- kable_input
   
   header <- attr(behead(tbl), 'header')
   
-  if (length(header) > 0 && 
-      ((is.na(row.names) && length(row.names(tbl)) > 0 && !identical(row.names(tbl), as.character(1:nrow(tbl)))) || row.names) 
-  ) {
+  
+  if (length(row.names) == 0 || is.na(row.names)) {      
+    if (length(header) > 0 && has_rownames(tbl)) 
+      header <- lapply(header, function(x) c(' ' = 1, x))
+  } else if (row.names) {
     header <- lapply(header, function(x) c(' ' = 1, x))
   }
   
@@ -144,6 +232,56 @@ add_complex_header_above <- function(kable_input, tbl, row.names = NA) {
     outp <- add_header_above(outp, i)
 
   return(outp)
+}
+
+#' @title Render a table with layered rows
+#' @description 
+#' Render a table with layered rows using kable. 
+#' It is supposed to be a list of tables that define the pieces of the output table.
+#' @param l is a list of tables.
+#' @param ... are parameters passed to kable.
+#' @export
+kable_collapse_rows <- function(l, ...) {
+  # l is a list of data.frames or matrices
+  dots <- list(...)
+  #  l <- lapply(l, as.data.frame)
+  rn <- character(0)
+  
+  if (length(dots$row.names) == 0 || is.na(dots$row.names)) {
+    if (
+      !all(
+        sapply(
+          l, 
+          function(x) 
+            identical(
+              row.names(x), 
+              as.character(1:nrow(x))
+            )
+        )
+      )
+    ) {
+      rn <- Reduce('c', lapply(l, row.names))
+    }
+  } else if (dots$row.names) {
+    rn <- Reduce('c', lapply(l, row.names))
+  }
+  
+  tab <- do.call('rbind', l)
+  if (length(rn) > 0)
+    if (is.mlth.data.frame(tab)) {
+      tab <- cbind(mlth.data.frame(' ' = rn), tab)
+    } else
+      tab <- cbind(' ' = rn, tab)
+  
+  dots$row.names <- FALSE
+  
+  kableExtra::pack_rows(
+    do.call('kable', c(list(tab), dots)),
+    index = setNames(
+      sapply(l, nrow),
+      names(l)
+    )
+  )
 }
 
 #' @title Register table for the output
@@ -204,21 +342,23 @@ xlsx.writer.openxlsx <- function(tblList, file, overwrite) {
     addWorksheet(wb, sheet)
     startRow <- 1
     
-    # ---------------------------------------------------------------------------------------------
-    # Write caption
+    # Write caption ------------------------------------------------------------
     if (length(attr(curTbl, 'caption')) > 0) {
-      mergeCells(wb, sheet,
-                 cols = c(1, ncol(curTbl) + as.numeric(length(row.names(curTbl)) > 0)),
-                 rows = startRow)
+      mergeCells(
+        wb, sheet,
+        cols = c(1, ncol(curTbl) + as.numeric(length(row.names(curTbl)) > 0)),
+        rows = startRow
+      )
       
-      writeData(wb, sheet, 
-                as.character(attr(curTbl, 'caption')),
-                startCol = 1, startRow = startRow)
+      writeData(
+        wb, sheet, 
+        as.character(attr(curTbl, 'caption')),
+        startCol = 1, startRow = startRow
+      )
       startRow <- startRow + 1
     }
 
-    # ---------------------------------------------------------------------------------------------    
-    # Write header
+    # Write header -------------------------------------------------------------
     header <- attr(curTbl, 'header')
     startRow <- startRow + length(header)
     
@@ -226,48 +366,61 @@ xlsx.writer.openxlsx <- function(tblList, file, overwrite) {
       for (i in 1:length(header)) {
         currCol <- 1
         for (j in 1:length(header[[i]])) {
-          mergeCells(wb, sheet,
-                     cols = 1:header[[i]][j] + currCol,
-                     rows = startRow - i)
-          writeData(wb, sheet, 
-                    names(header[[i]])[j],
-                    startCol = currCol + 1,
-                    startRow = startRow - i)
+          mergeCells(
+            wb, sheet,
+            cols = 1:header[[i]][j] + currCol,
+            rows = startRow - i
+          )
+          writeData(
+            wb, sheet, 
+            names(header[[i]])[j],
+            startCol = currCol + 1,
+            startRow = startRow - i
+          )
           
           currCol <- currCol + header[[i]][j]
         }
       }
     }
     
-    addStyle(wb, sheet,
-             createStyle(textDecoration = 'bold'),
-             rows = 1:startRow,
-             cols = 1 + 1:ncol(curTbl),
-             gridExpand = TRUE)
+    addStyle(
+      wb, sheet,
+      createStyle(textDecoration = 'bold'),
+      rows = 1:startRow,
+      cols = 1 + 1:ncol(curTbl),
+      gridExpand = TRUE
+    )
     
-    # ---------------------------------------------------------------------------------------------
-    # Write body    
-    writeData(wb, sheet, 
-              curTbl,
-              startCol = 2, startRow = startRow)
+    # Write body ---------------------------------------------------------------
+    writeData(
+      wb, sheet, 
+      curTbl,
+      startCol = 2, startRow = startRow
+    )
+    
     if (length(row.names(curTbl)) > 0) {
-      writeData(wb, sheet, 
-                row.names(curTbl),
-                startCol = 1,
-                startRow = startRow + 1)
+      writeData(
+        wb, sheet, 
+        row.names(curTbl),
+        startCol = 1,
+        startRow = startRow + 1
+      )
     }
     startRow <- startRow + nrow(curTbl) + 1
     
-    # ---------------------------------------------------------------------------------------------
-    # Write note
+    # Write note ---------------------------------------------------------------
     if (length(attr(curTbl, 'note')) > 0) {
-      mergeCells(wb, sheet,
-                 cols = c(1, ncol(curTbl) + as.numeric(length(row.names(curTbl)) > 0)),
-                 rows = startRow)
+      mergeCells(
+        wb, sheet,
+        cols = c(1, ncol(curTbl) + as.numeric(length(row.names(curTbl)) > 0)),
+        rows = startRow
+      )
       
-      writeData(wb, sheet, 
-                as.character(attr(curTbl, 'note')),
-                startCol = 1, startRow = startRow)
+      writeData(
+        wb, sheet, 
+        as.character(attr(curTbl, 'note')),
+        startCol = 1, startRow = startRow
+      )
     }
   }
   
@@ -291,9 +444,11 @@ write.xlsx.output <- function(file, overwrite = TRUE, writer = xlsx.writer.openx
   
   x <- lapply(x, behead)
   
-  writer(tblList = x,
-         file = file,
-         overwrite = overwrite)
+  writer(
+    tblList = x,
+    file = file,
+    overwrite = overwrite
+  )
 }
 
 #' @rdname cor_helpers
@@ -317,11 +472,14 @@ kable_cors <- function(x, y = x, type = c('pearson', 'spearman')) {
   require('Hmisc')
   
   f <- function(r, p, n) {
-    cell_spec(sprintf('%0.3f', r), 
-              'html', bold = p < 0.05,
-              escape = FALSE,
-              popover = spec_popover(sprintf('p = %0.3f, n = %0.0f', p, n),
-                                     position = 'bottom'))
+    cell_spec(
+      sprintf('%0.3f', r), 
+      'html', bold = p < 0.05,
+      escape = FALSE,
+      popover = spec_popover(
+        sprintf('p = %0.3f, n = %0.0f', p, n),
+        position = 'bottom')
+    )
   }
   
   x <- as.matrix(x)
@@ -331,10 +489,14 @@ kable_cors <- function(x, y = x, type = c('pearson', 'spearman')) {
   
   cors <- lapply(cors, `[`, colnames(x), colnames(y))
   
-  matrix(Map(f, cors$r, cors$P, cors$n),
-         ncol = ncol(cors$r),
-         dimnames = list(colnames(x), 
-                         colnames(y)))
+  matrix(
+    Map(f, cors$r, cors$P, cors$n),
+    ncol = ncol(cors$r),
+    dimnames = list(
+      colnames(x), 
+      colnames(y)
+    )
+  )
 }
 
 #' @rdname cor_helpers
@@ -350,11 +512,15 @@ mlth_cors <- function(x, y = x, type = c('pearson', 'spearman')) {
   
   cors <- lapply(cors, `[`, colnames(x), colnames(y))
   
-  as.mlth.data.frame(Map(function(r, n, P) data.frame(r = r, n = n, p = P),
-                         asplit(cors$r, 2), 
-                         asplit(cors$n, 2), 
-                         asplit(cors$P, 2)),
-                     row.names = colnames(x))
+  as.mlth.data.frame(
+    Map(
+      function(r, n, P) data.frame(r = r, n = n, p = P),
+      asplit(cors$r, 2), 
+      asplit(cors$n, 2), 
+      asplit(cors$P, 2)
+    ),
+    row.names = colnames(x)
+  )
 }
 
 # TODO: Write on Google Drive

@@ -4,8 +4,7 @@
 \alias{write.xlsx.output}
 \title{Write registered output tables}
 \usage{
-write.xlsx.output(file, overwrite = TRUE,
-  writer = xlsx.writer.openxlsx)
+write.xlsx.output(file, overwrite = TRUE, writer = xlsx.writer.openxlsx)
 }
 \arguments{
 \item{file}{is the name of `xlsx` file.}
