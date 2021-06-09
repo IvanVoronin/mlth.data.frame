@@ -9,6 +9,11 @@ kable2.default <- function(...) {
   # register_output
   # name
   dots <- list(...)
+  
+  if (length(dots$register_output) > 0 && dots$register_output) {
+    dots <- register_output_internal(...)
+  }
+  
   if (length(dots$x) > 0)
     x <- dots$x
   else x <- dots[[1]]
@@ -36,15 +41,15 @@ kable2.default <- function(...) {
     note <- NULL
   }
   
-  if (length(dots$register_output > 0) && dots$register_output) {
-    register_output(
-      x, 
-      name = dots$name,
-      caption = dots$caption,
-      note = note
-    )
-  }
-
+  # if (length(dots$register_output > 0) && dots$register_output) {
+  #   register_output(
+  #     x, 
+  #     name = dots$name,
+  #     caption = dots$caption,
+  #     note = note
+  #   )
+  # }
+  
   dots$name <- NULL
   dots$register_output <- NULL
   
@@ -67,6 +72,12 @@ kable2.default <- function(...) {
 kable2.list <- function(l, ...) {
   # l is a list of data.frames or matrices
   dots <- list(...)
+  
+  if (length(dots$register_output) > 0 && dots$register_output) {
+    dots <- register_output_internal(l, ...)
+    dots[[1]] <- NULL
+  }
+  
 #  l <- lapply(l, as.data.frame)
   rn <- character(0)
   
@@ -109,10 +120,24 @@ kable2.list <- function(l, ...) {
 
 #' @export
 kable2.mlth.data.frame <- function(x, ...) {
-  outp <- kable2(behead(x), ...)
+  dots <- list(...)
+  
+  if (length(dots$register_output) > 0 && dots$register_output) {
+    dots <- register_output_internal(x, ...)
+    dots[[1]] <- NULL
+  }
+  
+  outp <- do.call(
+    'kable2',
+    c(
+      list(behead(x)), 
+      dots
+    )
+  )
+
   add_complex_header_above(
     outp, x, 
-    row.names = list(...)$row.names
+    row.names = dots$row.names
   )
 }
 
@@ -332,16 +357,35 @@ kable_collapse_rows <- function(l, ...) {
 #' 
 #' @export
 register_output <- function(tbl, name = NULL, caption = NULL, note = NULL) {
-  if (!exists('OUTPUT', where = globalenv()))
-    OUTPUT <<- list()
+  if (!exists('OUTPUT', where = globalenv())) {
+    assign(
+      'OUTPUT', 
+      list(), 
+      envir = globalenv()
+    )
+    OUTPUT <- list()    
+  } else {
+    OUTPUT <- get(
+      'OUTPUT',
+      envir = globalenv()
+    )
+  }
   
   attr(tbl, 'caption') <- caption
   attr(tbl, 'note') <- note
   
   if (length(name) == 0) {
-    OUTPUT <<- c(OUTPUT, list(tbl))
+    assign(
+      'OUTPUT', 
+      c(OUTPUT, list(tbl)), 
+      envir = globalenv()
+    )
   } else {
-    OUTPUT[[name]] <<- tbl
+    assign(
+      paste0('OUTPUT[[', name, ']]'), 
+      tbl,
+      envir = globalenv()
+    )
   }
   return(tbl)
 }
@@ -406,6 +450,21 @@ xlsx.writer.openxlsx <- function(tblList, file, overwrite) {
   
   for (sheet in names(tblList)) {
     curTbl <- tblList[[sheet]]
+    
+    # Is this a list?
+    this_is_list <- 
+      is.list(curTbl) && 
+      !is.data.frame(curTbl) && 
+      !is.mlth.data.frame(curTbl)
+      
+    nc <- ncol(curTbl)
+    if (length(nc) == 0)
+      nc <- ncol(curTbl[[1]])
+    if (length(nc) == 0)
+      stop('something is wrong with the table: failed compute number of rows')
+    
+    has_rn <- length(row.names(curTbl) > 0)
+    
     addWorksheet(wb, sheet)
     startRow <- 1
     
@@ -413,7 +472,7 @@ xlsx.writer.openxlsx <- function(tblList, file, overwrite) {
     if (length(attr(curTbl, 'caption')) > 0) {
       mergeCells(
         wb, sheet,
-        cols = c(1, ncol(curTbl) + as.numeric(length(row.names(curTbl)) > 0)),
+        cols = c(1, nc + as.numeric(has_rn)),
         rows = startRow
       )
       
@@ -426,7 +485,9 @@ xlsx.writer.openxlsx <- function(tblList, file, overwrite) {
     }
 
     # Write header -------------------------------------------------------------
+    # if this is mlth.data.frame
     header <- attr(curTbl, 'header')
+    
     startRow <- startRow + length(header)
     
     if (length(header) > 0) {
@@ -454,32 +515,86 @@ xlsx.writer.openxlsx <- function(tblList, file, overwrite) {
       wb, sheet,
       createStyle(textDecoration = 'bold'),
       rows = 1:startRow,
-      cols = 1 + 1:ncol(curTbl),
+      cols = 1 + 1:nc,
       gridExpand = TRUE
     )
     
     # Write body ---------------------------------------------------------------
-    writeData(
-      wb, sheet, 
-      curTbl,
-      startCol = 2, startRow = startRow
-    )
-    
-    if (length(row.names(curTbl)) > 0) {
+    if (!this_is_list) {
       writeData(
         wb, sheet, 
-        row.names(curTbl),
-        startCol = 1,
-        startRow = startRow + 1
+        curTbl,
+        startCol = 2, 
+        startRow = startRow
       )
+      
+      if (has_rn) {
+        writeData(
+          wb, sheet, 
+          row.names(curTbl),
+          startCol = 1,
+          startRow = startRow + 1
+        )
+      }
+      startRow <- startRow + nrow(curTbl) + 1
+    } else {
+      # assuming curTbl is list
+      writeData(
+        wb, sheet, 
+        as.data.frame(t(names(curTbl[[1]]))),
+        startCol = 2,
+        startRow = startRow,
+        colNames = FALSE
+      )
+      startRow <- startRow + 1
+      
+      for (i in 1:length(curTbl)) {
+        mergeCells(
+          wb, sheet,
+          cols = 1:(nc + 1),
+          rows = startRow
+        )
+        addStyle(
+          wb, sheet,
+          createStyle(textDecoration = 'bold'),
+          cols = 1,
+          rows = startRow,
+          gridExpand = TRUE
+        )
+        writeData(
+          wb, sheet, 
+          names(curTbl)[i],
+          startCol = 1,
+          startRow = startRow
+        )
+        startRow <- startRow + 1
+       
+        writeData(
+          wb, sheet, 
+          curTbl[[i]],
+          startCol = 2, 
+          startRow = startRow,
+          colNames = FALSE
+        )
+        
+        if (length(row.names(curTbl[[i]])) > 0) {
+          writeData(
+            wb, sheet, 
+            row.names(curTbl[[i]]),
+            startCol = 1,
+            startRow = startRow
+          )
+        }
+        
+        startRow <- startRow + nrow(curTbl[[i]])
+      }
     }
-    startRow <- startRow + nrow(curTbl) + 1
     
     # Write note ---------------------------------------------------------------
     if (length(attr(curTbl, 'note')) > 0) {
       mergeCells(
         wb, sheet,
-        cols = c(1, ncol(curTbl) + as.numeric(length(row.names(curTbl)) > 0)),
+        cols = c(1, nc + as.numeric(has_rn)),
         rows = startRow
       )
       

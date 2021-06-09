@@ -39,32 +39,53 @@
 #' str(B)
 #' 
 #' @export
-mlth.data.frame <- function(..., row.names = NULL, check.rows = FALSE, 
-                            check.names = FALSE, fix.empty.names = FALSE,
-                            stringsAsFactors = default.stringsAsFactors()) {
+mlth.data.frame <- function(
+  ..., row.names = NULL, check.rows = FALSE, 
+  check.names = FALSE, fix.empty.names = FALSE,
+  stringsAsFactors = default.stringsAsFactors()
+) {
   dots <- list(...)
   
-  dots <- lapply(dots,
-                 function(x) {
-                   if (!isAtomic(x)) {
-                     x <- unclass(x)
-                     x <- lapply(x, sys.function(0))
-                   } else {
-                     if (stringsAsFactors && is.character(x)) 
-                       x <- (as.factor(x))
-                     # if (n > 1 && length(x) == 1)
-                     #   x <- rep_len(x, n)
-                   }
-                   return(x)
-                 })
+  if (length(row.names) == 0) {
+    rns <- lapply(dots, row.names)
+    
+    # https://stackoverflow.com/questions/18813526/check-whether-all-elements-of-a-list-are-in-equal-in-r
+    equal_rns <- Reduce(
+      function(x, y) if (identical(x, y)) return(x) else FALSE,
+      rns
+    )
+    
+    if (!isFALSE(equal_rns))
+      row.names <- equal_rns
+  }
+    
+  dots <- lapply(
+    dots,
+    function(x) {
+      if (!isAtomic(x)) {
+        x <- unclass(x)
+        x <- lapply(x, sys.function(0))
+      } else {
+        if (stringsAsFactors && is.character(x)) 
+          x <- (as.factor(x))
+        # if (n > 1 && length(x) == 1)
+        #   x <- rep_len(x, n)
+      }
+      return(x)
+    })
   
   # row.names
   # TODO: implement taking row.names from the ... structures
-  x <- do.call('data.frame', 
-               c(dots, 
-                 list(row.names = row.names, 
-                      check.rows = check.rows)))
-#  n <- nrow(x)
+  
+  
+  x <- do.call(
+    'data.frame', 
+    c(dots, 
+      list(
+        row.names = row.names, 
+        check.rows = check.rows
+      )))
+  #  n <- nrow(x)
   rn <- row.names(x)
   
   # Check names
