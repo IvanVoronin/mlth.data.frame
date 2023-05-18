@@ -41,8 +41,7 @@
 #' @export
 mlth.data.frame <- function(
   ..., row.names = NULL, check.rows = FALSE, 
-  check.names = FALSE, fix.empty.names = FALSE,
-  stringsAsFactors = default.stringsAsFactors()
+  check.names = FALSE, fix.empty.names = FALSE
 ) {
   dots <- list(...)
   
@@ -65,12 +64,12 @@ mlth.data.frame <- function(
       if (!isAtomic(x)) {
         x <- unclass(x)
         x <- lapply(x, sys.function(0))
-      } else {
-        if (stringsAsFactors && is.character(x)) 
-          x <- (as.factor(x))
-        # if (n > 1 && length(x) == 1)
-        #   x <- rep_len(x, n)
-      }
+      } #else {
+#        if (stringsAsFactors && is.character(x)) 
+#          x <- (as.factor(x))
+#         if (n > 1 && length(x) == 1)
+#           x <- rep_len(x, n)
+#      }
       return(x)
     })
   

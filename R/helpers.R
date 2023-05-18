@@ -356,6 +356,7 @@ kable_collapse_rows <- function(l, ...) {
 #' @return `tbl` with 'caption' and 'note' attributes
 #' 
 #' @export
+# FIXME: Strange behavior when called from a loop
 register_output <- function(tbl, name = NULL, caption = NULL, note = NULL) {
   if (!exists('OUTPUT', where = globalenv())) {
     assign(

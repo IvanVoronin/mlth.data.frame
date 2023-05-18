@@ -11,6 +11,6 @@ Suggests:
     openxlsx,
     knitr,
     rmarkdown
-License: ???
-RoxygenNote: 7.1.1
+License: CC BY-NC-SA
+RoxygenNote: 7.2.3
 VignetteBuilder: knitr
