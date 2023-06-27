@@ -359,11 +359,6 @@ kable_collapse_rows <- function(l, ...) {
 # FIXME: Strange behavior when called from a loop
 register_output <- function(tbl, name = NULL, caption = NULL, note = NULL) {
   if (!exists('OUTPUT', where = globalenv())) {
-    assign(
-      'OUTPUT', 
-      list(), 
-      envir = globalenv()
-    )
     OUTPUT <- list()    
   } else {
     OUTPUT <- get(
@@ -376,18 +371,15 @@ register_output <- function(tbl, name = NULL, caption = NULL, note = NULL) {
   attr(tbl, 'note') <- note
   
   if (length(name) == 0) {
-    assign(
-      'OUTPUT', 
-      c(OUTPUT, list(tbl)), 
-      envir = globalenv()
-    )
+    OUTPUT <- c(OUTPUT, list(tbl))
   } else {
-    assign(
-      paste0('OUTPUT[[', name, ']]'), 
-      tbl,
-      envir = globalenv()
-    )
+    OUTPUT[[name]] <- tbl
   }
+  assign(
+    'OUTPUT',
+    OUTPUT,
+    envir = globalenv()
+  )
   return(tbl)
 }
 
