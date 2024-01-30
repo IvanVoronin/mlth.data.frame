@@ -607,15 +607,23 @@ xlsx.writer.openxlsx <- function(tblList, file, overwrite) {
 #' Write the contents of `OUTPUT` list to an `xlsx` file. This function is supposed to be used 
 #' at the very end of the analysis when all output tables are prepared.
 #' @param file is the name of `xlsx` file.
+#' @param x a list of output tables.
 #' @param overwrite should we overwrite the existing output file?
 #' @param writer is the function that writes list of tables into an xlsx file.
 #'
 #' @export
-write.xlsx.output <- function(file, overwrite = TRUE, writer = xlsx.writer.openxlsx) {
-  if (!exists('OUTPUT', where = globalenv()))
-    stop('OUTPUT does not exist in globalenv, I have nothing to write')
-  else
-    x <- OUTPUT
+write.xlsx.output <- function(
+    file, 
+    x = list(), 
+    overwrite = TRUE, 
+    writer = xlsx.writer.openxlsx
+) {
+  if (length(x) == 0) {
+    if (!exists('OUTPUT', where = globalenv()))
+      stop('OUTPUT does not exist in globalenv, I have nothing to write')
+    else
+      x <- OUTPUT
+  }
   
   x <- lapply(x, behead)
   

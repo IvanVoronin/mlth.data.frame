@@ -4,10 +4,17 @@
 \alias{write.xlsx.output}
 \title{Write registered output tables}
 \usage{
-write.xlsx.output(file, overwrite = TRUE, writer = xlsx.writer.openxlsx)
+write.xlsx.output(
+  file,
+  x = list(),
+  overwrite = TRUE,
+  writer = xlsx.writer.openxlsx
+)
 }
 \arguments{
 \item{file}{is the name of `xlsx` file.}
+
+\item{x}{a list of output tables.}
 
 \item{overwrite}{should we overwrite the existing output file?}
 
