@@ -5,29 +5,32 @@
 \alias{print}
 \title{Print Multi-Header Data Frame}
 \usage{
-\method{print}{mlth.data.frame}(x, digits = NULL, justify = "left")
+\method{print}{mlth.data.frame}(x, roundNum = 3, ...)
 }
 \arguments{
 \item{x}{a \code{mlth.data.frame} object.}
 
-\item{digits}{number of digits after decimal point 
-(default NULL, same as for \code{\link{print.data.frame}}).
-The value is passed to \code{\link{format}} when printing the values,
-work the same way as for \code{data.frame}.}
-
-\item{justify}{justify header left, right or centre 
-(default 'left', same as 'none').}
+\item{roundNum}{number of digits after decimal point to show for the numeric values.
+Default is 3. It only works when this is an integer. In all other cases (0, NA, NULL),
+the values are formatted according to the standard \code{\link{print.data.frame}} arguments.}
 }
 \description{
 The method to print a \code{mlth.data.frame} object.
 }
 \examples{
-(L <- mlth(X = c('A', 'B', 'C'),
-		        Y = list(N = 1:3, M = 4:6)))
+(L <- mlth(
+  X = c("A", "B", "C"),
+  Y = list(N = 1:3, M = 4:6)
+))
 
-print(L, justify = 'centre')
+print(L, justify = "centre")
 
-M <- mlth(A = rnorm(10),
-		       B=list(C = rnorm(10), D = rnorm(10)))
+M <- mlth(
+  A = rnorm(10),
+  B = list(C = rnorm(10), D = rnorm(10))
+)
+
+print(M, roundNum = 4)
+print(M, roundNum = FALSE)
 
 }

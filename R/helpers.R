@@ -625,6 +625,10 @@ write.xlsx.output <- function(
       x <- OUTPUT
   }
   
+  if (is.mlth.data.frame(x)) {
+    x <- list(x)
+  }
+  
   x <- lapply(x, behead)
   
   writer(
